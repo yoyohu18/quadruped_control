@@ -16,9 +16,9 @@
 这样得到的数据严格满足 FK(关节角) == 足端位置，估计器面对的是一个
 自洽的世界，任何误差都只能来自估计器本身或人为注入的噪声与打滑。
 
-.. note::
-   这里的 trot 时序是为了造数据而写的最小实现。真正的步态调度器是
-   里程碑 4 的内容，那时会有相位、占空比、步态切换等完整功能。
+步态时序直接使用里程碑 4 的 :class:`~gait_scheduler.GaitScheduler`，
+不再自己手写 —— 数据生成器和真实控制器共用同一个时间基准，才能保证
+在仿真里调对的东西到了控制器里还是对的。
 """
 
 from __future__ import annotations
@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from dynamics import rpy_to_matrix
+from gait_scheduler import GaitDefinition, GaitScheduler
 from kinematics import HIP_OFFSETS, LEG_GEOMETRY, LEGS, inverse_kinematics, leg_jacobian
 
 __all__ = [
@@ -39,7 +40,7 @@ __all__ = [
     "add_encoder_noise",
 ]
 
-#: trot 步态中同相位的两组对角腿。
+#: trot 步态中同相位的两组对角腿（供文档与测试引用）。
 TROT_PAIRS = (("FL", "RR"), ("FR", "RL"))
 
 
@@ -174,16 +175,16 @@ def _omega_body_from_rpy(rpy: np.ndarray, rpy_dot: np.ndarray) -> np.ndarray:
     )
 
 
-def _contact_schedule(t: np.ndarray, cfg: TrajectoryConfig) -> np.ndarray:
-    """trot 时序：两组对角腿交替支撑，占空比 0.5。"""
-    phase = (t / cfg.gait_period) % 1.0
-    contact = np.zeros((len(t), 4), dtype=bool)
-    for leg in LEGS:
-        i = LEGS.index(leg)
-        offset = 0.0 if leg in TROT_PAIRS[0] else 0.5
-        leg_phase = (phase + offset) % 1.0
-        contact[:, i] = leg_phase < 0.5  # 前半周期支撑
-    return contact
+def _make_scheduler(cfg: TrajectoryConfig) -> GaitScheduler:
+    """按配置里的周期构造一个 trot 调度器。"""
+    return GaitScheduler(
+        GaitDefinition(
+            name="trot",
+            period=cfg.gait_period,
+            duty_factor=0.5,
+            phase_offsets={"FL": 0.0, "RR": 0.0, "FR": 0.5, "RL": 0.5},
+        )
+    )
 
 
 def generate_trot(cfg: TrajectoryConfig | None = None) -> GroundTruth:
@@ -203,7 +204,10 @@ def generate_trot(cfg: TrajectoryConfig | None = None) -> GroundTruth:
     pos, vel, acc, rpy, rpy_dot = _base_pose(t, cfg)
     R = np.array([rpy_to_matrix(r) for r in rpy])
     omega_body = _omega_body_from_rpy(rpy, rpy_dot)
-    contact = _contact_schedule(t, cfg)
+
+    scheduler = _make_scheduler(cfg)
+    contact = np.array([scheduler.contact(tk) for tk in t])
+    swing_progress = np.array([scheduler.swing_phase(tk) for tk in t])
 
     foot_world = np.zeros((n, 4, 3))
     joint_pos = np.zeros((n, 12))
@@ -227,10 +231,7 @@ def generate_trot(cfg: TrajectoryConfig | None = None) -> GroundTruth:
             else:
                 if k > 0 and contact[k - 1, i]:
                     liftoff[i] = foot_world[k - 1, i]  # 刚离地
-                # 摆动相位 0 -> 1
-                phase = (t[k] / cfg.gait_period) % 1.0
-                offset = 0.0 if leg in TROT_PAIRS[0] else 0.5
-                s = ((phase + offset) % 1.0 - 0.5) / 0.5
+                s = swing_progress[k, i]  # 摆动进度 0 -> 1，由调度器给出
                 # 落脚点：髋部投影 + 半个支撑期的前移量（Raibert 启发式的雏形）
                 target = hip_world.copy()
                 target[2] = 0.0
