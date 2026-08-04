@@ -11,7 +11,7 @@
 | # | 里程碑 | 模块 | 状态 |
 |---|---|---|---|
 | 1 | 单腿运动学 —— FK / IK / 雅可比 | `kinematics/` | ✅ **已完成** —— [文档](docs/01_kinematics.md) —— 24 项测试 |
-| 2 | 刚体动力学 —— RNEA、CRBA、质心动量 | `dynamics/` | 计划中 |
+| 2 | 刚体动力学 —— RNEA、CRBA、质心动量、SRBD | `dynamics/` | ✅ **已完成** —— [文档](docs/02_dynamics.md) —— 45 项测试 |
 | 3 | 状态估计 —— 腿部里程计 + IMU 融合 | `state_estimator/` | 计划中 |
 | 4 | 步态调度器 —— 接触时序 | `gait_scheduler/` | 计划中 |
 | 5 | 摆动腿规划器 —— 足端轨迹 | `swing_planner/` | 计划中 |
@@ -31,8 +31,9 @@ conda activate go2_isaac_ros2
 # 运行目前已完成部分的全部测试
 pytest tests/ -v
 
-# 重新生成里程碑 1 的插图
+# 重新生成各里程碑的插图
 python scripts/viz_kinematics.py
+python scripts/viz_dynamics.py
 
 # 测一测 1 kHz 控制周期里到底塞得下什么
 python scripts/benchmark_kinematics.py
@@ -60,7 +61,7 @@ python scripts/benchmark_kinematics.py
 quadruped_control/
 ├── robot_description/go2/   Go2 URDF + 网格模型（自包含）
 ├── kinematics/              ✅ FK、IK、雅可比（闭式解 + Pinocchio）
-├── dynamics/                RNEA、CRBA、质心动量
+├── dynamics/                ✅ RNEA、CRBA、质心动量、单刚体模型 SRBD
 ├── state_estimator/         腿部里程计、IMU 融合
 ├── gait_scheduler/          接触时序表
 ├── footstep_planner/        脚落在哪
@@ -75,7 +76,7 @@ quadruped_control/
 └── docs/                    推导文档，每个里程碑一份
 ```
 
-`kinematics/` 之外的目录是尚未开始的里程碑的占位。
+`kinematics/`、`dynamics/` 之外的目录是尚未开始的里程碑的占位。
 
 ---
 
