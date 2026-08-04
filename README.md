@@ -15,7 +15,7 @@
 | 3 | 状态估计 —— 腿部里程计 + IMU 融合（ESKF） | `state_estimator/` | ✅ **已完成** —— [文档](docs/03_state_estimation.md) —— 32 项测试 |
 | 4 | 步态调度器 —— 相位、占空比、接触时序 | `gait_scheduler/` | ✅ **已完成** —— [文档](docs/04_gait_scheduler.md) —— 34 项测试 |
 | 5 | 摆动腿规划器 —— 足端轨迹与落地冲击 | `swing_planner/` | ✅ **已完成** —— [文档](docs/05_swing_planner.md) —— 32 项测试 |
-| 6 | 落脚点规划器 —— Raibert 启发式 + 捕获点 | `footstep_planner/` | 计划中 |
+| 6 | 落脚点规划器 —— LIPM、捕获点、Raibert | `footstep_planner/` | ✅ **已完成** —— [文档](docs/06_footstep_planner.md) —— 44 项测试 |
 | 7 | 凸 MPC —— 单刚体模型，预测时域上的 QP | `mpc/` | 计划中 |
 | 8 | 全身控制 —— 分层 QP | `whole_body_controller/` | 计划中 |
 | 9 | 强化学习运动 —— Isaac Lab 中的 PPO | `rl/`, `isaac/` | 计划中 |
@@ -37,6 +37,7 @@ python scripts/viz_dynamics.py
 python scripts/viz_state_estimation.py
 python scripts/viz_gait.py
 python scripts/viz_swing.py
+python scripts/viz_footstep.py
 
 # 测一测 1 kHz 控制周期里到底塞得下什么
 python scripts/benchmark_kinematics.py
@@ -67,7 +68,7 @@ quadruped_control/
 ├── dynamics/                ✅ RNEA、CRBA、质心动量、单刚体模型 SRBD
 ├── state_estimator/         ✅ 支撑腿里程计、ESKF 融合、真值数据生成
 ├── gait_scheduler/          ✅ 步态库、相位调度、支撑多边形与稳定裕度
-├── footstep_planner/        脚落在哪
+├── footstep_planner/        ✅ 线性倒立摆、捕获点、Raibert 与精确极限环系数
 ├── swing_planner/           ✅ 四种足端轨迹、落地冲击分析、IK 进控制回路
 ├── mpc/                     基于单刚体模型的凸 MPC
 ├── whole_body_controller/   分层 QP
@@ -79,7 +80,7 @@ quadruped_control/
 └── docs/                    推导文档，每个里程碑一份
 ```
 
-`kinematics/`、`dynamics/`、`state_estimator/`、`gait_scheduler/`、`swing_planner/` 之外的目录是尚未开始的里程碑的占位。
+`mpc/`、`whole_body_controller/`、`rl/`、`isaac/`、`configs/` 是尚未开始的里程碑的占位。
 
 ---
 
