@@ -16,7 +16,7 @@
 | 4 | 步态调度器 —— 相位、占空比、接触时序 | `gait_scheduler/` | ✅ **已完成** —— [文档](docs/04_gait_scheduler.md) —— 34 项测试 |
 | 5 | 摆动腿规划器 —— 足端轨迹与落地冲击 | `swing_planner/` | ✅ **已完成** —— [文档](docs/05_swing_planner.md) —— 32 项测试 |
 | 6 | 落脚点规划器 —— LIPM、捕获点、Raibert | `footstep_planner/` | ✅ **已完成** —— [文档](docs/06_footstep_planner.md) —— 44 项测试 |
-| 7 | 凸 MPC —— 单刚体模型，预测时域上的 QP | `mpc/` | 计划中 |
+| 7 | 凸 MPC —— 单刚体模型 + 摩擦锥 QP | `mpc/` | ✅ **已完成** —— [文档](docs/07_convex_mpc.md) —— 26 项测试 |
 | 8 | 全身控制 —— 分层 QP | `whole_body_controller/` | 计划中 |
 | 9 | 强化学习运动 —— Isaac Lab 中的 PPO | `rl/`, `isaac/` | 计划中 |
 | 10 | 残差强化学习、地形自适应、抗推恢复 | `rl/` | 计划中 |
@@ -38,6 +38,7 @@ python scripts/viz_state_estimation.py
 python scripts/viz_gait.py
 python scripts/viz_swing.py
 python scripts/viz_footstep.py
+python scripts/viz_mpc.py
 
 # 测一测 1 kHz 控制周期里到底塞得下什么
 python scripts/benchmark_kinematics.py
@@ -52,7 +53,7 @@ python scripts/benchmark_kinematics.py
 | Isaac Sim / Isaac Lab | 5.1.0 / 0.54.3 |
 | PyTorch | 2.7.0 + CUDA 12.8 |
 | rsl-rl | 5.0.1 |
-| QP 求解器 | osqp、quadprog、qpsolvers、proxsuite |
+| QP 求解器 | daqp、quadprog（经 qpsolvers 调用；条件化后是稠密 QP） |
 | GPU | RTX 5080, 16 GB |
 
 `casadi` 与 `acados` 装在 base 环境里，从里程碑 7 开始会用到。
@@ -70,7 +71,7 @@ quadruped_control/
 ├── gait_scheduler/          ✅ 步态库、相位调度、支撑多边形与稳定裕度
 ├── footstep_planner/        ✅ 线性倒立摆、捕获点、Raibert 与精确极限环系数
 ├── swing_planner/           ✅ 四种足端轨迹、落地冲击分析、IK 进控制回路
-├── mpc/                     基于单刚体模型的凸 MPC
+├── mpc/                     ✅ 凸 MPC：条件化 QP、摩擦金字塔、实时求解
 ├── whole_body_controller/   分层 QP
 ├── rl/                      PPO、残差强化学习
 ├── isaac/                   Isaac Lab 环境
@@ -80,7 +81,7 @@ quadruped_control/
 └── docs/                    推导文档，每个里程碑一份
 ```
 
-`mpc/`、`whole_body_controller/`、`rl/`、`isaac/`、`configs/` 是尚未开始的里程碑的占位。
+`whole_body_controller/`、`rl/`、`isaac/`、`configs/` 是尚未开始的里程碑的占位。
 
 ---
 
