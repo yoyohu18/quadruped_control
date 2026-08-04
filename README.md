@@ -1,0 +1,98 @@
+# quadruped_control
+
+在宇树 Go2 上从第一性原理搭建的一整套四足运动控制栈 —— 运动学、动力学、状态估计、步态与落脚点规划、凸 MPC、全身控制（WBC），以及 Isaac Lab 中的强化学习。
+
+每个模块都能独立运行、独立测试，并配有完整推导文档。
+
+---
+
+## 进度
+
+| # | 里程碑 | 模块 | 状态 |
+|---|---|---|---|
+| 1 | 单腿运动学 —— FK / IK / 雅可比 | `kinematics/` | ✅ **已完成** —— [文档](docs/01_kinematics.md) —— 24 项测试 |
+| 2 | 刚体动力学 —— RNEA、CRBA、质心动量 | `dynamics/` | 计划中 |
+| 3 | 状态估计 —— 腿部里程计 + IMU 融合 | `state_estimator/` | 计划中 |
+| 4 | 步态调度器 —— 接触时序 | `gait_scheduler/` | 计划中 |
+| 5 | 摆动腿规划器 —— 足端轨迹 | `swing_planner/` | 计划中 |
+| 6 | 落脚点规划器 —— Raibert 启发式 + 捕获点 | `footstep_planner/` | 计划中 |
+| 7 | 凸 MPC —— 单刚体模型，预测时域上的 QP | `mpc/` | 计划中 |
+| 8 | 全身控制 —— 分层 QP | `whole_body_controller/` | 计划中 |
+| 9 | 强化学习运动 —— Isaac Lab 中的 PPO | `rl/`, `isaac/` | 计划中 |
+| 10 | 残差强化学习、地形自适应、抗推恢复 | `rl/` | 计划中 |
+
+---
+
+## 快速开始
+
+```bash
+conda activate go2_isaac_ros2
+
+# 运行目前已完成部分的全部测试
+pytest tests/ -v
+
+# 重新生成里程碑 1 的插图
+python scripts/viz_kinematics.py
+
+# 测一测 1 kHz 控制周期里到底塞得下什么
+python scripts/benchmark_kinematics.py
+```
+
+## 环境
+
+| 组件 | 版本 |
+|---|---|
+| Python | 3.11（conda 环境 `go2_isaac_ros2`） |
+| Pinocchio | 2.7.0 |
+| Isaac Sim / Isaac Lab | 5.1.0 / 0.54.3 |
+| PyTorch | 2.7.0 + CUDA 12.8 |
+| rsl-rl | 5.0.1 |
+| QP 求解器 | osqp、quadprog、qpsolvers、proxsuite |
+| GPU | RTX 5080, 16 GB |
+
+`casadi` 与 `acados` 装在 base 环境里，从里程碑 7 开始会用到。
+
+---
+
+## 目录结构
+
+```
+quadruped_control/
+├── robot_description/go2/   Go2 URDF + 网格模型（自包含）
+├── kinematics/              ✅ FK、IK、雅可比（闭式解 + Pinocchio）
+├── dynamics/                RNEA、CRBA、质心动量
+├── state_estimator/         腿部里程计、IMU 融合
+├── gait_scheduler/          接触时序表
+├── footstep_planner/        脚落在哪
+├── swing_planner/           脚怎么过去
+├── mpc/                     基于单刚体模型的凸 MPC
+├── whole_body_controller/   分层 QP
+├── rl/                      PPO、残差强化学习
+├── isaac/                   Isaac Lab 环境
+├── configs/                 机器人与控制器参数
+├── tests/                   交叉验证测试
+├── scripts/                 可视化与性能基准
+└── docs/                    推导文档，每个里程碑一份
+```
+
+`kinematics/` 之外的目录是尚未开始的里程碑的占位。
+
+---
+
+## 设计原则
+
+**每样东西都写两遍，互相交叉验证。** 每个算法都实现两次：一次手推闭式解，一次走通用库（Pinocchio）。测试断言二者一致到 `1e-12`。**单一实现是无法被测试的** —— 推导里的错误和你预期里的同一个错误永远会互相印证。
+
+**实时路径不带重依赖。** 那些将来要跑在真机 1 kHz 线程里的模块，只 import NumPy，不 import 别的，这样移植到 C++ 是机械劳动而不是重写。
+
+**每个里程碑都能单独跑起来。** 明确目标、可量化输出、可视化、测试、调试清单 —— 全部齐了才进入下一个。
+
+**约定先写清楚，再用测试钉死。** 坐标系、关节顺序、雅可比参考系是四足绝大多数 bug 的来源。每一项都文档化一次，并配一个一旦漂移就大声失败的测试。
+
+---
+
+## 参考文献
+
+Featherstone, *Rigid Body Dynamics Algorithms* · Lynch & Park, *Modern Robotics* · Di Carlo et al., *Dynamic Locomotion in the MIT Cheetah 3 via Convex MPC* (IROS 2018) · Carpentier et al., *The Pinocchio C++ library* (SII 2019)
+
+机器人模型来自宇树 [`unitree_ros`](https://github.com/unitreerobotics/unitree_ros)。
