@@ -17,7 +17,7 @@
 | 5 | 摆动腿规划器 —— 足端轨迹与落地冲击 | `swing_planner/` | ✅ **已完成** —— [文档](docs/05_swing_planner.md) —— 32 项测试 |
 | 6 | 落脚点规划器 —— LIPM、捕获点、Raibert | `footstep_planner/` | ✅ **已完成** —— [文档](docs/06_footstep_planner.md) —— 44 项测试 |
 | 7 | 凸 MPC —— 单刚体模型 + 摩擦锥 QP | `mpc/` | ✅ **已完成** —— [文档](docs/07_convex_mpc.md) —— 26 项测试 |
-| 8 | 全身控制 —— 分层 QP | `whole_body_controller/` | 计划中 |
+| 8 | 全身控制 —— 完整动力学加权 QP | `whole_body_controller/` | ✅ **已完成** —— [文档](docs/08_whole_body_control.md) —— 28 项测试 |
 | 9 | 强化学习运动 —— Isaac Lab 中的 PPO | `rl/`, `isaac/` | 计划中 |
 | 10 | 残差强化学习、地形自适应、抗推恢复 | `rl/` | 计划中 |
 
@@ -39,6 +39,7 @@ python scripts/viz_gait.py
 python scripts/viz_swing.py
 python scripts/viz_footstep.py
 python scripts/viz_mpc.py
+python scripts/viz_wbc.py
 
 # 测一测 1 kHz 控制周期里到底塞得下什么
 python scripts/benchmark_kinematics.py
@@ -72,7 +73,7 @@ quadruped_control/
 ├── footstep_planner/        ✅ 线性倒立摆、捕获点、Raibert 与精确极限环系数
 ├── swing_planner/           ✅ 四种足端轨迹、落地冲击分析、IK 进控制回路
 ├── mpc/                     ✅ 凸 MPC：条件化 QP、摩擦金字塔、实时求解
-├── whole_body_controller/   分层 QP
+├── whole_body_controller/   ✅ 完整 18 自由度动力学 QP，1 kHz
 ├── rl/                      PPO、残差强化学习
 ├── isaac/                   Isaac Lab 环境
 ├── configs/                 机器人与控制器参数
@@ -81,7 +82,9 @@ quadruped_control/
 └── docs/                    推导文档，每个里程碑一份
 ```
 
-`whole_body_controller/`、`rl/`、`isaac/`、`configs/` 是尚未开始的里程碑的占位。
+`rl/`、`isaac/`、`configs/` 是尚未开始的里程碑的占位。
+
+**经典技术栈（M1–M8）已完整**：状态估计 → 步态 → 落脚点 → 摆动轨迹 → 凸 MPC → WBC → 关节力矩。
 
 ---
 
