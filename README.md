@@ -19,7 +19,7 @@
 | 7 | 凸 MPC —— 单刚体模型 + 摩擦锥 QP | `mpc/` | ✅ **已完成** —— [文档](docs/07_convex_mpc.md) —— 26 项测试 |
 | 8 | 全身控制 —— 完整动力学加权 QP | `whole_body_controller/` | ✅ **已完成** —— [文档](docs/08_whole_body_control.md) —— 28 项测试 |
 | 9 | 强化学习运动 —— Isaac Lab 中的 PPO | `rl/`, `isaac/` | ✅ **已完成** —— [文档](docs/09_rl_ppo.md) —— 58 项测试 |
-| 10 | 残差强化学习、地形自适应、抗推恢复 | `rl/` | 计划中 |
+| 10 | 残差强化学习、地形自适应、抗推恢复 | `rl/`, `isaac/` | ✅ **已完成** —— [文档](docs/10_residual_rl.md) —— 29 项测试 |
 
 ---
 
@@ -41,6 +41,7 @@ python scripts/viz_footstep.py
 python scripts/viz_mpc.py
 python scripts/viz_wbc.py
 python scripts/viz_rl.py
+python scripts/viz_residual.py
 
 # 测一测 1 kHz 控制周期里到底塞得下什么
 python scripts/benchmark_kinematics.py
@@ -48,8 +49,14 @@ python scripts/benchmark_kinematics.py
 # 在 Isaac Lab 里训练 RL 策略（平地 300 次迭代，RTX 5080 上实测 2 分 45 秒）
 python scripts/train_rl.py --task Go2-Velocity-Flat-v0 --num_envs 4096 --headless
 
+# 残差强化学习：同样的环境，动作叠加在解析步态上（样本效率 2.3 倍）
+python scripts/train_rl.py --task Go2-Residual-Flat-v0 --num_envs 4096 --headless
+
 # 回放并给出量化指标
 python scripts/play_rl.py --task Go2-Velocity-Flat-Play-v0 --checkpoint logs/go2_flat/<时间戳>/model_300.pt
+
+# 抗推恢复：名义控制器 / 纯 RL / 残差 RL 在同一协议下对比
+python scripts/eval_push.py --task Go2-Residual-Flat-Play-v0 --policy nominal --headless
 ```
 
 ## 环境
@@ -81,21 +88,26 @@ quadruped_control/
 ├── swing_planner/           ✅ 四种足端轨迹、落地冲击分析、IK 进控制回路
 ├── mpc/                     ✅ 凸 MPC：条件化 QP、摩擦金字塔、实时求解
 ├── whole_body_controller/   ✅ 完整 18 自由度动力学 QP，1 kHz
-├── rl/                      ✅ 从零实现的 PPO、GAE、奖励核、玩具环境（不依赖仿真器）
-├── isaac/                   ✅ Isaac Lab 的 Go2 速度跟踪环境（自己写的 MDP 配置）
+├── rl/                      ✅ 从零实现的 PPO、GAE、奖励核、玩具环境、名义步态控制器
+├── isaac/                   ✅ Isaac Lab 环境：纯 RL 与残差 RL 各四个任务
 ├── configs/                 机器人与控制器参数
 ├── tests/                   交叉验证测试
 ├── scripts/                 可视化与性能基准
 └── docs/                    推导文档，每个里程碑一份
 ```
 
-`configs/` 是尚未开始的里程碑的占位。
+`configs/` 目前是空的占位。
 
 **经典技术栈（M1–M8）已完整**：状态估计 → 步态 → 落脚点 → 摆动轨迹 → 凸 MPC → WBC → 关节力矩。
 
 **两条路线都通了。** M9 换成无模型强化学习：同一个 Go2，不建模，直接从数据里学。
 M1–M8 在这里以三种身份继续参与 —— 性能基线、奖励设计的依据（M4 的相位、M5 的摆动
-高度、M6 的捕获点、M7 的摩擦锥都变成了奖励项）、以及 M10 残差 RL 的基础控制器。
+高度、M6 的捕获点、M7 的摩擦锥都变成了奖励项）、以及 M10 残差 RL 的名义控制器。
+
+**M10 把两条路线缝了起来**：M1/4/5/6 的解析步态重写成批量 torch 当名义控制器，
+策略只学残差。与 M9 逐项对齐的对比下，样本效率 **2.3 倍**、运输成本 −31%、
+动作抖动 −50%。M7 的 MPC 与 M8 的 WBC **进不去** —— 它们要解 QP，无法批量化到
+GPU 上跑 4096 份，这条分界线本身就是里程碑 10 最重要的知识点。
 
 ---
 

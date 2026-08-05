@@ -95,3 +95,28 @@ class Go2FlatPPORunnerCfg(Go2RoughPPORunnerCfg):
         self.experiment_name = "go2_flat"
         self.actor.hidden_dims = [128, 128, 128]
         self.critic.hidden_dims = [128, 128, 128]
+
+
+@configclass
+class Go2ResidualFlatPPORunnerCfg(Go2FlatPPORunnerCfg):
+    """平地残差 RL。
+
+    **超参数与纯 RL 版一字不改**，包括迭代数。这是刻意的：里程碑 9 与 10
+    的唯一自变量必须是动作的参数化，否则"残差 RL 更快"这个结论就不干净。
+
+    唯一值得动的是 ``init_noise_std``：残差的量级本来就小（乘了
+    :math:`\\alpha=0.1`），σ 仍取 1.0 意味着初始探索是 ±0.1 rad 的关节抖动
+    叠在名义步态上 —— 正好是"扰动但不破坏"的量级。改小反而会让早期探索不足。
+    """
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.experiment_name = "go2_residual_flat"
+
+
+@configclass
+class Go2ResidualRoughPPORunnerCfg(Go2RoughPPORunnerCfg):
+    """崎岖地形残差 RL。"""
+
+    def __post_init__(self) -> None:
+        self.experiment_name = "go2_residual_rough"

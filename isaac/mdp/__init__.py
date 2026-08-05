@@ -7,9 +7,12 @@
 2. ``isaaclab_tasks...velocity.mdp`` —— **只借一个**：地形课程
    ``terrain_levels_vel``。它要读地形管理器的内部状态，重写一遍没有
    任何教学价值，属于"该复用就复用"。
-3. :mod:`isaac.mdp.rewards` —— 本项目自己的奖励项，里程碑 4/5/6 的物理
-   先验从这里进入 RewardManager。同名项（如 ``feet_air_time``）会覆盖
-   上面两层。
+3. 本包自己的模块 —— 同名项会覆盖上面两层：
+
+   * :mod:`isaac.mdp.rewards` —— 里程碑 4/5/6 的物理先验（M9）；
+   * :mod:`isaac.mdp.actions` —— 残差动作项（M10）；
+   * :mod:`isaac.mdp.observations` —— 名义动作与步态相位（M10）；
+   * :mod:`isaac.mdp.curriculums` —— 残差幅值与推力课程（M10）。
 
 这样配置里统一写 ``mdp.xxx``，不用关心某一项到底出自哪一层。
 """
@@ -19,4 +22,7 @@ from isaaclab_tasks.manager_based.locomotion.velocity.mdp.curriculums import (  
     terrain_levels_vel,
 )
 
+from .actions import *  # noqa: F401, F403
+from .curriculums import *  # noqa: F401, F403
+from .observations import *  # noqa: F401, F403
 from .rewards import *  # noqa: F401, F403
