@@ -18,7 +18,7 @@
     # 用自己实现的 PPO
     python scripts/train_rl.py --task Go2-Velocity-Flat-v0 --algo ours --headless
 
-    # 崎岖地形
+    # 崎岖地形（RTX 5080 上实测 1 小时 25 分）
     python scripts/train_rl.py --task Go2-Velocity-Rough-v0 --max_iterations 1500 --headless
 """
 
