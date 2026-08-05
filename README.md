@@ -18,7 +18,7 @@
 | 6 | 落脚点规划器 —— LIPM、捕获点、Raibert | `footstep_planner/` | ✅ **已完成** —— [文档](docs/06_footstep_planner.md) —— 44 项测试 |
 | 7 | 凸 MPC —— 单刚体模型 + 摩擦锥 QP | `mpc/` | ✅ **已完成** —— [文档](docs/07_convex_mpc.md) —— 26 项测试 |
 | 8 | 全身控制 —— 完整动力学加权 QP | `whole_body_controller/` | ✅ **已完成** —— [文档](docs/08_whole_body_control.md) —— 28 项测试 |
-| 9 | 强化学习运动 —— Isaac Lab 中的 PPO | `rl/`, `isaac/` | 计划中 |
+| 9 | 强化学习运动 —— Isaac Lab 中的 PPO | `rl/`, `isaac/` | ✅ **已完成** —— [文档](docs/09_rl_ppo.md) —— 58 项测试 |
 | 10 | 残差强化学习、地形自适应、抗推恢复 | `rl/` | 计划中 |
 
 ---
@@ -40,9 +40,16 @@ python scripts/viz_swing.py
 python scripts/viz_footstep.py
 python scripts/viz_mpc.py
 python scripts/viz_wbc.py
+python scripts/viz_rl.py
 
 # 测一测 1 kHz 控制周期里到底塞得下什么
 python scripts/benchmark_kinematics.py
+
+# 在 Isaac Lab 里训练 RL 策略（平地约 15 分钟）
+python scripts/train_rl.py --task Go2-Velocity-Flat-v0 --num_envs 4096 --headless
+
+# 回放并给出量化指标
+python scripts/play_rl.py --task Go2-Velocity-Flat-Play-v0 --checkpoint logs/go2_flat/<时间戳>/model_300.pt
 ```
 
 ## 环境
@@ -74,17 +81,21 @@ quadruped_control/
 ├── swing_planner/           ✅ 四种足端轨迹、落地冲击分析、IK 进控制回路
 ├── mpc/                     ✅ 凸 MPC：条件化 QP、摩擦金字塔、实时求解
 ├── whole_body_controller/   ✅ 完整 18 自由度动力学 QP，1 kHz
-├── rl/                      PPO、残差强化学习
-├── isaac/                   Isaac Lab 环境
+├── rl/                      ✅ 从零实现的 PPO、GAE、奖励核、玩具环境（不依赖仿真器）
+├── isaac/                   ✅ Isaac Lab 的 Go2 速度跟踪环境（自己写的 MDP 配置）
 ├── configs/                 机器人与控制器参数
 ├── tests/                   交叉验证测试
 ├── scripts/                 可视化与性能基准
 └── docs/                    推导文档，每个里程碑一份
 ```
 
-`rl/`、`isaac/`、`configs/` 是尚未开始的里程碑的占位。
+`configs/` 是尚未开始的里程碑的占位。
 
 **经典技术栈（M1–M8）已完整**：状态估计 → 步态 → 落脚点 → 摆动轨迹 → 凸 MPC → WBC → 关节力矩。
+
+**两条路线都通了。** M9 换成无模型强化学习：同一个 Go2，不建模，直接从数据里学。
+M1–M8 在这里以三种身份继续参与 —— 性能基线、奖励设计的依据（M4 的相位、M5 的摆动
+高度、M6 的捕获点、M7 的摩擦锥都变成了奖励项）、以及 M10 残差 RL 的基础控制器。
 
 ---
 
@@ -96,7 +107,9 @@ quadruped_control/
 
 **每个里程碑都能单独跑起来。** 明确目标、可量化输出、可视化、测试、调试清单 —— 全部齐了才进入下一个。
 
-**约定先写清楚，再用测试钉死。** 坐标系、关节顺序、雅可比参考系是四足绝大多数 bug 的来源。每一项都文档化一次，并配一个一旦漂移就大声失败的测试。
+**约定先写清楚，再用测试钉死。** 坐标系、关节顺序、雅可比参考系是四足绝大多数 bug 的来源。每一项都文档化一次，并配一个一旦漂移就大声失败的测试。里程碑 1 推出来的 `ISAAC_JOINT_ORDER` 在里程碑 9 被运行中的 Isaac Sim 逐项验证 —— 约定确实没漂。
+
+**学习类模块也不许"看着对"。** M9 的 PPO 有一个纯 torch 的玩具环境，它的最优回报可以手算，端到端测试的判据是"达到解析最优的 80% 以上"，而不是"曲线在涨"；GAE 与 rsl-rl 的实现逐元素比对。**整套 RL 测试不需要启动仿真器。**
 
 ---
 
