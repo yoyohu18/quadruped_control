@@ -12,7 +12,7 @@
 
     conda activate go2_isaac_ros2
 
-    # 平地，先跑这个（RTX 5080 上约 15 分钟）
+    # 平地，先跑这个（RTX 5080 上实测 2 分 45 秒）
     python scripts/train_rl.py --task Go2-Velocity-Flat-v0 --num_envs 4096 --headless
 
     # 用自己实现的 PPO

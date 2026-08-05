@@ -488,8 +488,8 @@ class Go2RoughEnvCfg(ManagerBasedRLEnvCfg):
 class Go2FlatEnvCfg(Go2RoughEnvCfg):
     """平地版本。**先在这里跑通，再上崎岖地形。**
 
-    平地训练约 300 次迭代（RTX 5080 上十几分钟）就能走得像样，是调试整条
-    管线的正确入口。崎岖地形要 1500 次以上。
+    平地训练 300 次迭代就能走得像样 —— RTX 5080 上实测 **2 分 45 秒**，
+    是调试整条管线的正确入口。崎岖地形要 1500 次以上。
     """
 
     def __post_init__(self) -> None:

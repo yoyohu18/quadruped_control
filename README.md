@@ -45,7 +45,7 @@ python scripts/viz_rl.py
 # 测一测 1 kHz 控制周期里到底塞得下什么
 python scripts/benchmark_kinematics.py
 
-# 在 Isaac Lab 里训练 RL 策略（平地约 15 分钟）
+# 在 Isaac Lab 里训练 RL 策略（平地 300 次迭代，RTX 5080 上实测 2 分 45 秒）
 python scripts/train_rl.py --task Go2-Velocity-Flat-v0 --num_envs 4096 --headless
 
 # 回放并给出量化指标

@@ -82,7 +82,16 @@ def main() -> None:
 
 
 def _load_policy(env, agent_cfg):
-    """两种后端的 checkpoint 格式不同，这里统一成一个可调用对象。"""
+    """两种后端统一成同一个可调用对象：**输入是观测字典，输出是动作**。
+
+    两边的入参约定并不一样，这里抹平：
+
+    * rsl-rl ≥ 5.0 的推理策略直接吃整个观测字典（它内部按
+      ``obs_groups`` 自己挑用哪几组）；
+    * 本仓库的策略吃 ``policy`` 那一组的张量。
+
+    统一在这一层，评估代码里就只剩一种调用方式。
+    """
     if args.algo == "rsl_rl":
         from isaaclab_rl.rsl_rl import RslRlVecEnvWrapper
         from rsl_rl.runners import OnPolicyRunner
@@ -107,7 +116,8 @@ def _load_policy(env, agent_cfg):
     )
     runner = OnPolicyRunner(vec_env, actor_critic, runner_config=RunnerConfig(), device=vec_env.device)
     runner.load(args.checkpoint)
-    return runner.get_inference_policy()
+    inner = runner.get_inference_policy()
+    return lambda obs_dict: inner(obs_dict["policy"])
 
 
 @torch.inference_mode()
@@ -121,7 +131,6 @@ def _evaluate(env, policy) -> list[tuple[str, float, str]]:
     mass = float(robot.data.default_mass.sum(dim=1)[0])
 
     obs_dict, _ = env.reset()
-    obs = obs_dict["policy"]
 
     lin_err_sq = ang_err_sq = 0.0
     power_sum = speed_sum = 0.0
@@ -131,9 +140,8 @@ def _evaluate(env, policy) -> list[tuple[str, float, str]]:
     last_action = torch.zeros(unwrapped.num_envs, unwrapped.action_manager.total_action_dim, device=device)
 
     for _ in range(args.steps):
-        action = policy(obs)
+        action = policy(obs_dict)
         obs_dict, _, terminated, truncated, _ = env.step(action)
-        obs = obs_dict["policy"]
 
         command = unwrapped.command_manager.get_command("base_velocity")
         lin_err_sq += float(torch.mean(torch.sum((command[:, :2] - robot.data.root_lin_vel_b[:, :2]) ** 2, dim=1)))
