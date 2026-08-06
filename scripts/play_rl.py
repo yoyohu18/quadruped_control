@@ -15,7 +15,9 @@
     python scripts/play_rl.py --task Go2-Velocity-Flat-Play-v0 \\
         --checkpoint logs/go2_flat/<时间戳>/model_300.pt
 
-不加 ``--headless`` 会开图形界面，能直接看到机器人走。
+不加 ``--headless`` 会开图形界面；``--video`` 可以离屏录成 mp4。
+**两者都依赖 RTX 渲染器** —— 若这台机器上渲染器不可用（见下方 ``--video``
+分支的注释），纯物理的 headless 评估不受影响。
 """
 
 from __future__ import annotations
@@ -31,8 +33,15 @@ parser.add_argument("--algo", type=str, default="rsl_rl", choices=["rsl_rl", "ou
 parser.add_argument("--num_envs", type=int, default=32)
 parser.add_argument("--steps", type=int, default=1000, help="评估步数（50 Hz，1000 步 = 20 秒）")
 parser.add_argument("--export_onnx", action="store_true", help="导出 ONNX，供真机部署")
+parser.add_argument("--video", action="store_true", help="离屏录像成 mp4（headless 也能录）")
+parser.add_argument("--video_length", type=int, default=500, help="录多少步（50 Hz，500 步=10 秒）")
 AppLauncher.add_app_launcher_args(parser)
 args = parser.parse_args()
+
+if args.video:
+    # 离屏渲染需要相机子系统。**必须在 AppLauncher 之前设**，
+    # 之后再改就来不及了 —— Kit 的扩展在 App 启动时就已经按这个标志加载完了。
+    args.enable_cameras = True
 
 app_launcher = AppLauncher(args)
 simulation_app = app_launcher.app
@@ -63,7 +72,25 @@ def _agent_cfg(task: str):
 def main() -> None:
     env_cfg = parse_env_cfg(args.task, device=args.device, num_envs=args.num_envs)
     agent_cfg = _agent_cfg(args.task)
-    env = gym.make(args.task, cfg=env_cfg)
+    env = gym.make(args.task, cfg=env_cfg, render_mode="rgb_array" if args.video else None)
+
+    if args.video:
+        # 录像是**离屏**渲染，不需要窗口系统，但仍然要 RTX 渲染器出帧 ——
+        # 与交互式界面**是同一条渲染路径**，不是绕过它。
+        #
+        # 实测（2026-08-06，RTX 5080 + 驱动 595.84 + Isaac Sim 5.1）：
+        # 交互式与离屏两种方式都在 ``librtx.scenedb.plugin.so`` 的同一个
+        # 地址（+0x123ef）段错误。纯物理的 headless 一切正常，训练与评估
+        # 全部跑得通 —— 挂的只是渲染器。驱动降到 570/575 系列应可解决。
+        video_dir = os.path.join(os.path.dirname(args.checkpoint), "videos")
+        env = gym.wrappers.RecordVideo(
+            env,
+            video_folder=video_dir,
+            step_trigger=lambda step: step == 0,
+            video_length=args.video_length,
+            disable_logger=True,
+        )
+        print(f"[录像] 将写入 {video_dir}")
 
     policy = _load_policy(env, agent_cfg)
     metrics = _evaluate(env, policy)
