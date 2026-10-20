@@ -20,6 +20,7 @@
 | 8 | 全身控制 —— 完整动力学加权 QP | `whole_body_controller/` | ✅ **已完成** —— [文档](docs/08_whole_body_control.md) —— 28 项测试 |
 | 9 | 强化学习运动 —— Isaac Lab 中的 PPO | `rl/`, `isaac/` | ✅ **已完成** —— [文档](docs/09_rl_ppo.md) —— 58 项测试 |
 | 10 | 残差强化学习、地形自适应、抗推恢复 | `rl/`, `isaac/` | ✅ **已完成** —— [文档](docs/10_residual_rl.md) —— 29 项测试 |
+| 11 | MuJoCo 全身闭环（MPC + WBC）与足端力估计 | `sim/`, `locomotion/`, `state_estimator/` | ✅ **已完成** —— [文档](docs/11_mujoco_closed_loop.md) —— 29 项测试 |
 
 ---
 
@@ -57,6 +58,9 @@ python scripts/play_rl.py --task Go2-Velocity-Flat-Play-v0 --checkpoint logs/go2
 
 # 抗推恢复：名义控制器 / 纯 RL / 残差 RL 在同一协议下对比
 python scripts/eval_push.py --task Go2-Residual-Flat-Play-v0 --policy nominal --headless
+
+# M11：MPC + WBC 在 MuJoCo 里闭环（环境 env_isaaclab_recovered，见 docs/11 第 13 节）
+python scripts/eval_mujoco.py && python scripts/viz_mujoco.py
 ```
 
 ## 环境
@@ -82,7 +86,7 @@ quadruped_control/
 ├── robot_description/go2/   Go2 URDF + 网格模型（自包含）
 ├── kinematics/              ✅ FK、IK、雅可比（闭式解 + Pinocchio）
 ├── dynamics/                ✅ RNEA、CRBA、质心动量、单刚体模型 SRBD
-├── state_estimator/         ✅ 支撑腿里程计、ESKF 融合、真值数据生成
+├── state_estimator/         ✅ 支撑腿里程计、ESKF 融合、足端力观测器与接触检测
 ├── gait_scheduler/          ✅ 步态库、相位调度、支撑多边形与稳定裕度
 ├── footstep_planner/        ✅ 线性倒立摆、捕获点、Raibert 与精确极限环系数
 ├── swing_planner/           ✅ 四种足端轨迹、落地冲击分析、IK 进控制回路
@@ -90,6 +94,8 @@ quadruped_control/
 ├── whole_body_controller/   ✅ 完整 18 自由度动力学 QP，1 kHz
 ├── rl/                      ✅ 从零实现的 PPO、GAE、奖励核、玩具环境、名义步态控制器
 ├── isaac/                   ✅ Isaac Lab 环境：纯 RL 与残差 RL 各四个任务
+├── sim/                     ✅ MuJoCo 封装（Pinocchio 约定）、闭环评估循环
+├── locomotion/              ✅ M2–M8 串成的 MPC + WBC 闭环控制器
 ├── configs/                 机器人与控制器参数
 ├── tests/                   交叉验证测试
 ├── scripts/                 可视化与性能基准
@@ -99,6 +105,11 @@ quadruped_control/
 `configs/` 目前是空的占位。
 
 **经典技术栈（M1–M8）已完整**：状态估计 → 步态 → 落脚点 → 摆动轨迹 → 凸 MPC → WBC → 关节力矩。
+
+**M11 在独立物理引擎里闭环验证了它**：MuJoCo 中 0.25–1.25 m/s 速度跟踪 RMS
+0.028–0.077 m/s，最高稳定 1.5 m/s，5.5% 质量失配下跟踪基本不变；侧推（最差相位）
+15 N·s。基于广义动量观测器的足端力估计 RMS 4.8 N，接触检测 99.5%（步态计划
+92.3%）。此前 M7 只在自己的单刚体模型上闭环、M8 只做过单步检验。
 
 **两条路线都通了。** M9 换成无模型强化学习：同一个 Go2，不建模，直接从数据里学。
 M1–M8 在这里以三种身份继续参与 —— 性能基线、奖励设计的依据（M4 的相位、M5 的摆动

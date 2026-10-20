@@ -8,13 +8,19 @@
   它既是最简单的可用估计器，也是衡量"融合到底带来了什么"的对照组。
 * :mod:`state_estimator.eskf` —— 误差状态卡尔曼滤波，融合 IMU 与腿部
   运动学，把足端位置纳入状态。这是工业标准做法。
+* :mod:`state_estimator.contact_force` —— 广义动量观测器估计足端力，
+  滞回阈值判接触。脚上没有力传感器时，"哪只脚踩实了"只能这么知道。
 """
 
+from .contact_force import ContactDetector, ContactDetectorConfig, MomentumObserver
 from .eskf import ErrorStateKF, ESKFConfig, ESKFState, so3_exp
 from .leg_odometry import LegOdometry, base_velocity_from_legs, foot_position_in_base
 from .simulation import GroundTruth, TrajectoryConfig, generate_trot, simulate_imu
 
 __all__ = [
+    "ContactDetector",
+    "ContactDetectorConfig",
+    "MomentumObserver",
     "ESKFConfig",
     "ESKFState",
     "ErrorStateKF",

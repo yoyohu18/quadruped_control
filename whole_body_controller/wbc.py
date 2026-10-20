@@ -69,7 +69,8 @@ class WBCConfig:
             硬约束）—— 见模块文档关于软/硬的讨论。
         acceleration_regularisation: 广义加速度的正则权重，保证 QP 严格凸。
         force_regularisation: 接触力的正则权重。
-        torque_limit: 单关节力矩上限，N·m。Go2 的膝关节约 45 N·m。
+        torque_limit: 单关节力矩上限，N·m。标量表示 12 个关节共用，也可以
+            给 (12,) 数组逐关节指定 —— Go2 的 hip/thigh 是 23.7，膝是 45.43。
         friction: 摩擦与法向力限制，与里程碑 7 共用同一套定义。
         solver: QP 求解器名，缺省自动挑选。
     """
@@ -77,7 +78,7 @@ class WBCConfig:
     force_tracking_weight: float = 1.0
     acceleration_regularisation: float = 1e-4
     force_regularisation: float = 1e-6
-    torque_limit: float = 45.0
+    torque_limit: float | np.ndarray = 45.0
     friction: FrictionConstraints = field(default_factory=FrictionConstraints)
     solver: str | None = None
 
@@ -86,7 +87,7 @@ class WBCConfig:
             raise ValueError("力跟踪权重不能为负")
         if self.acceleration_regularisation <= 0.0:
             raise ValueError("加速度正则必须为正，否则 QP 可能不严格凸")
-        if self.torque_limit <= 0.0:
+        if np.any(np.asarray(self.torque_limit) <= 0.0):
             raise ValueError("力矩上限必须为正")
         if self.solver is None:
             from mpc.srbd_mpc import _pick_solver
